@@ -55,6 +55,7 @@ async function fetchEthereumNFTs(walletAddress: string): Promise<{
       const url = new URL(`https://eth-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}/getNFTsForOwner`)
       url.searchParams.append("owner", walletAddress)
       url.searchParams.append("withMetadata", "true")
+      url.searchParams.append("orderBy", "transferTime")
       url.searchParams.append("excludeFilters[]", "SPAM")
       url.searchParams.append("pageSize", "100")
 

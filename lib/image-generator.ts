@@ -49,7 +49,7 @@ export class NFTImageGenerator {
     width: number,
     height: number,
     nft: NFT,
-    showLabels = true,
+    showLabels = false,
   ) {
     // Draw image with aspect ratio preservation
     const imgAspect = img.width / img.height

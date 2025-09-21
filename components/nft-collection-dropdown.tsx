@@ -38,6 +38,8 @@ export function NFTCollectionDropdown({
         <CardDescription>
           Found {collections.length} collection{collections.length !== 1 ? "s" : ""} for {walletAddress.slice(0, 6)}...
           {walletAddress.slice(-4)} on {blockchain}
+          <br />
+          Select your NFT to add
         </CardDescription>
       </CardHeader>
       <CardContent>

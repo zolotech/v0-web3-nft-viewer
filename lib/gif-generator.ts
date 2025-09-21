@@ -35,7 +35,7 @@ export class NFTGifGenerator {
     this.ctx = this.canvas.getContext("2d")!
 
     // Set default delay
-    this.gif.setDelay(delay)
+    // this.gif.setDelay(delay)
   }
 
   private async loadImage(src: string): Promise<HTMLImageElement> {

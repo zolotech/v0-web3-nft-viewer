@@ -74,9 +74,6 @@ export function WalletInput({ onSubmit, isLoading }: WalletInputProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ethereum">Ethereum</SelectItem>
-                <SelectItem value="solana">Solana</SelectItem>
-                <SelectItem value="abstract">Abstract</SelectItem>
-                <SelectItem value="apechain">ApeChain</SelectItem>
               </SelectContent>
             </Select>
           </div>

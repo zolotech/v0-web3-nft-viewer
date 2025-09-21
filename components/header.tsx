@@ -20,7 +20,7 @@ export function Header() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
           <Wallet className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold text-primary">NFT Viewer</span>
+          <span className="text-xl font-bold text-primary">Zoloz NFT Viewer</span>
         </Link>
 
         <nav className="hidden md:flex items-center space-x-6">
@@ -40,24 +40,17 @@ export function Header() {
               )}
             </Button>
           </Link>
-          <Link href="/setup">
-            <Button variant="ghost" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Setup
-            </Button>
-          </Link>
-          <Button variant="ghost" size="sm">
-            About
-          </Button>
+          
+    
         </nav>
 
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon">
-            <Github className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon">
-            <Twitter className="h-5 w-5" />
-          </Button>
+          
+          <Link href="https://x.com/zolozeth">
+            <Button variant="ghost" size="icon">
+              <Twitter className="h-5 w-5" />
+            </Button>
+          </Link>
           <ModeToggle />
         </div>
       </div>

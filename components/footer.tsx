@@ -4,9 +4,9 @@ export function Footer() {
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold">Web3 NFT Viewer</h3>
+            <h3 className="text-lg font-semibold">ETH NFT Viewer</h3>
             <p className="text-sm text-muted-foreground">
-              Explore your digital assets across multiple blockchains with ease.
+              Explore your digital assets across the Ethereum blockchain with ease.
             </p>
           </div>
 
@@ -14,9 +14,9 @@ export function Footer() {
             <h4 className="text-sm font-semibold">Supported Chains</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>Ethereum</li>
-              <li>Solana</li>
-              <li>Abstract</li>
-              <li>ApeChain</li>
+              <li>Solana (coming soon)</li>
+              <li>Abstract (coming soon)</li>
+              <li>ApeChain (coming soon)</li>
             </ul>
           </div>
 
@@ -24,7 +24,6 @@ export function Footer() {
             <h4 className="text-sm font-semibold">Resources</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>Documentation</li>
-              <li>API Reference</li>
               <li>Support</li>
               <li>Status</li>
             </ul>
@@ -41,7 +40,7 @@ export function Footer() {
         </div>
 
         <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; 2024 Web3 NFT Viewer. Built with Next.js and powered by blockchain APIs.</p>
+          <p>&copy; 2025 ETH NFT Viewer. Built by Zolo with blockchain APIs.</p>
         </div>
       </div>
     </footer>

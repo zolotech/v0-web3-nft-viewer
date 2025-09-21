@@ -115,7 +115,7 @@ export default function HomePage() {
             <span className="text-accent">Viewer</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Explore your digital assets across multiple blockchains. Enter your wallet address to view your NFT
+            Explore your digital assets on the ethereum blockchain. Enter your wallet address to view your NFT
             collections.
           </p>
         </div>
