@@ -208,27 +208,7 @@ export function ImageGeneratorDialog({ nfts, currentLayout, trigger }: ImageGene
               )}
             </CardContent>
           </Card>
-
-          {/* Preview */}
-          {imageUrl && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Preview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-center">
-                  <img
-                    src={imageUrl || "/placeholder.svg"}
-                    alt="Generated NFT Image"
-                    className="max-w-full h-auto border rounded-lg"
-                    style={{ maxHeight: "400px" }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Actions */}
+{/* Actions */}
           <div className="flex gap-3 justify-end">
             <Button onClick={handleGenerateImage} disabled={isGenerating || nfts.length === 0} className="min-w-32">
               {isGenerating ? (
@@ -251,6 +231,26 @@ export function ImageGeneratorDialog({ nfts, currentLayout, trigger }: ImageGene
               </Button>
             )}
           </div>
+          {/* Preview */}
+          {imageUrl && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Preview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-center">
+                  <img
+                    src={imageUrl || "/placeholder.svg"}
+                    alt="Generated NFT Image"
+                    className="max-w-full h-auto border rounded-lg"
+                    style={{ maxHeight: "400px" }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          
         </div>
       </DialogContent>
     </Dialog>

@@ -10,6 +10,10 @@ import { LoadingSpinner } from "@/components/loading-spinner"
 import { ErrorMessage } from "@/components/error-message"
 import { WalletDashboard } from "@/components/wallet-dashboard"
 import { fetchNFTsByBlockchain } from "@/lib/blockchain-apis"
+import { useSelectedNFTs } from "@/contexts/selected-nfts-context"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Trash2 } from "lucide-react"
 
 export type Blockchain = "ethereum" | "solana" | "abstract" | "apechain"
 
@@ -37,6 +41,7 @@ export interface NFT {
 }
 
 export default function HomePage() {
+  const { selectedNFTs, clearAll, count } = useSelectedNFTs()
   const [walletAddress, setWalletAddress] = useState("")
   const [selectedBlockchain, setSelectedBlockchain] = useState<Blockchain>("ethereum")
   const [collections, setCollections] = useState<NFTCollection[]>([])
@@ -47,6 +52,7 @@ export default function HomePage() {
   const [transactionCount, setTransactionCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
 
   const handleWalletSubmit = async (address: string, blockchain: Blockchain) => {
     setWalletAddress(address)
@@ -118,7 +124,28 @@ export default function HomePage() {
             Explore your digital assets on the ethereum blockchain. Enter your wallet address to view your NFT
             collections.
           </p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <span className="text-xl font-bold text-primary"><a href="/selected">click here for Selected NFTs</a></span>
+          </p>
         </div>
+
+        
+        {count > 0 && (
+              <div className="flex items-center justify-center gap-4">
+                <Badge variant="secondary" className="text-sm px-3 py-1">
+                  {count} NFT{count !== 1 ? "s" : ""} Selected
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearAll}
+                  className="text-destructive hover:text-destructive bg-transparent"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear All
+                </Button>
+              </div>
+            )}
 
         <div className="max-w-4xl mx-auto space-y-8">
           <WalletInput onSubmit={handleWalletSubmit} isLoading={isLoading} />

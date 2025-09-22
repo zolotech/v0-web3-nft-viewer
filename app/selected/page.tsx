@@ -46,6 +46,9 @@ export default function SelectedPage() {
               View and manage your selected NFTs from across different collections and blockchains. Choose your
               preferred layout and export options.
             </p>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              <span className="text-xl font-bold text-primary"><a href="/">click here to Select NFTs</a></span>
+            </p>
 
             {count > 0 && (
               <div className="flex items-center justify-center gap-4">
