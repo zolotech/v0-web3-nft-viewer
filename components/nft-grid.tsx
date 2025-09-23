@@ -174,7 +174,6 @@ export function NFTGrid({ nfts, collection }: NFTGridProps) {
             </CardContent>
           </Card>
         ))}
-      </div>
       
         </CardDescription>
         </CardContent>
