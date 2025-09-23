@@ -37,7 +37,7 @@ export function NFTGrid({ nfts, collection }: NFTGridProps) {
   }
 
   return (
-  <div className="space-y-6">
+  
    <Card className="glow-effect">
       <CardHeader className="text-center">
         <CardTitle className="flex items-center justify-center gap-2">
@@ -48,15 +48,16 @@ export function NFTGrid({ nfts, collection }: NFTGridProps) {
             </p>
           </div>
         </CardTitle>
-        <CardDescription>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {nfts.map((nft) => (
-          <Card key={nft.id} className="nft-card-hover cursor-pointer group relative">
-            {isSelected(nft.id) && (
-              <div className="absolute top-2 right-2 z-10 bg-primary text-primary-foreground rounded-full p-1">
-                <Check className="h-4 w-4" />
-              </div>
-            )}
+      </CardHeader>
+      <CardDescription>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {nfts.map((nft) => (
+            <Card key={nft.id} className="nft-card-hover cursor-pointer group relative">
+              {isSelected(nft.id) && (
+                <div className="absolute top-2 right-2 z-10 bg-primary text-primary-foreground rounded-full p-1">
+                  <Check className="h-4 w-4" />
+                </div>
+              )}
 
             <CardContent className="p-0">
               <div className="aspect-square relative overflow-hidden rounded-t-lg">
@@ -174,10 +175,9 @@ export function NFTGrid({ nfts, collection }: NFTGridProps) {
             </CardContent>
           </Card>
         ))}
-      
-        </CardDescription>
-        </CardContent>
-          </Card>
-    </div>
+      </div>
+    </CardDescription>
+  </Card>
+    
   )
 }
