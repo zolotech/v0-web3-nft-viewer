@@ -148,9 +148,10 @@ export default function HomePage() {
                   
                 </CardTitle>
                 <CardDescription>
-                  Explore your digital assets on the ethereum blockchain. Enter your wallet address to view your NFT collections.
+                  Craft your own NFT masterpiece. Connect your wallet, select your favorite digital assets from multiple Ethereum wallets 
+                  and create a stunning grid to download and share.
                   <br /><br />
-                  <span className="text-xl font-bold text-primary"><a href="/selected">click here for Selected NFTs</a></span><br /><br />
+                  <span className="text-xl font-bold text-primary"><a href="/selected">Selected NFTs</a></span><br /><br />
                   {count > 0 && (
                   
                     <div className="flex items-center justify-center gap-4">
