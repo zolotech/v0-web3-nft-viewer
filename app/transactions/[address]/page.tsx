@@ -105,6 +105,9 @@ export default function TransactionsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mt-4">
+            <Link href="/" className="text-blue-600 hover:underline">Back to NFT Viewer</Link>
+          </div>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -156,9 +159,7 @@ export default function TransactionsPage() {
             </div>
           )}
           {transfers.length === 0 && <p className="text-center text-gray-500 mt-4">No transactions found.</p>}
-          <div className="mt-4">
-            <Link href="/" className="text-blue-600 hover:underline">Back to NFT Viewer</Link>
-          </div>
+          
         </CardContent>
       </Card>
     </div>

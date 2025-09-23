@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardTitle, CardDescription, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,14 +37,18 @@ export function NFTGrid({ nfts, collection }: NFTGridProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">{collection.name}</h2>
-        <p className="text-muted-foreground">
-          Showing {nfts.length} NFT{nfts.length !== 1 ? "s" : ""} from your collection
-        </p>
-      </div>
-
+  <div className="space-y-6">
+   <Card className="glow-effect">
+      <CardHeader className="text-center">
+        <CardTitle className="flex items-center justify-center gap-2">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">{collection.name}</h2>
+            <p className="text-muted-foreground">
+              Showing {nfts.length} NFT{nfts.length !== 1 ? "s" : ""} from your collection
+            </p>
+          </div>
+        </CardTitle>
+        <CardDescription>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {nfts.map((nft) => (
           <Card key={nft.id} className="nft-card-hover cursor-pointer group relative">
@@ -171,6 +175,10 @@ export function NFTGrid({ nfts, collection }: NFTGridProps) {
           </Card>
         ))}
       </div>
+      
+        </CardDescription>
+        </CardContent>
+          </Card>
     </div>
   )
 }

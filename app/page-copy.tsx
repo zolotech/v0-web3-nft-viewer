@@ -14,7 +14,6 @@ import { useSelectedNFTs } from "@/contexts/selected-nfts-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export type Blockchain = "ethereum" | "solana" | "abstract" | "apechain"
 
@@ -48,11 +47,12 @@ export default function HomePage() {
   const [collections, setCollections] = useState<NFTCollection[]>([])
   const [selectedCollection, setSelectedCollection] = useState<NFTCollection | null>(null)
   const [nfts, setNfts] = useState<NFT[]>([])
-  const [allNfts, setAllNfts] = useState<NFT[]>([])
+  const [allNfts, setAllNfts] = useState<NFT[]>([]) // Store all NFTs for filtering
   const [totalNfts, setTotalNfts] = useState(0)
   const [transactionCount, setTransactionCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
 
   const handleWalletSubmit = async (address: string, blockchain: Blockchain) => {
     setWalletAddress(address)
@@ -111,72 +111,41 @@ export default function HomePage() {
   }
 
   return (
-    <div
-      style={{
-        backgroundImage: "url('/bggrid1.jpeg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-        backgroundColor: "var(--background)", // Fallback for theme
-        minHeight: "100vh",
-        position: "relative",
-      }}
-    >
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          background: "oklch(0.7 0.15 200 / 0.2)", // Cyan overlay for readability
-          zIndex: -1,
-        }}
-      ></div>
+    <div className="min-h-screen bg-background">
       <Header />
+
       <main className="container mx-auto px-4 py-8">
         <div className="text-center mb-12">
-          <div className="max-w-4xl mx-auto space-y-8">
-            <Card className="glow-effect">
-              <CardHeader className="text-center">
-                <CardTitle className="flex items-center justify-center gap-2">
-                  <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4">
-                    <span className="text-primary">Zoloz</span> <span className="text-secondary">Crypto</span>{" "}
-                    <span className="text-accent">Canvas</span>
-                  </h1>
-                  
-                </CardTitle>
-                <CardDescription>
-                  Explore your digital assets on the ethereum blockchain. Enter your wallet address to view your NFT collections.
-                  <br /><br />
-                  <span className="text-xl font-bold text-primary"><a href="/selected">click here for Selected NFTs</a></span><br /><br />
-                  {count > 0 && (
-                  
-                    <div className="flex items-center justify-center gap-4">
-                      <a href="/selected">
-                        <Badge variant="secondary" className="text-sm px-3 py-1">
-                          {count} NFT{count !== 1 ? "s" : ""} Selected
-                        </Badge>
-                      </a>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={clearAll}
-                        className="text-destructive hover:text-destructive bg-transparent"
-                      >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                        Clear All
-                      </Button>
-                    </div>
-                  )}
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
+          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4">
+            <span className="text-primary">Web3</span> <span className="text-secondary">NFT</span>{" "}
+            <span className="text-accent">Viewer</span>
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Explore your digital assets on the ethereum blockchain. Enter your wallet address to view your NFT
+            collections.
+          </p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <span className="text-xl font-bold text-primary"><a href="/selected">click here for Selected NFTs</a></span>
+          </p>
         </div>
 
         
+        {count > 0 && (
+              <div className="flex items-center justify-center gap-4">
+                <Badge variant="secondary" className="text-sm px-3 py-1">
+                  {count} NFT{count !== 1 ? "s" : ""} Selected
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearAll}
+                  className="text-destructive hover:text-destructive bg-transparent"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear All
+                </Button>
+              </div>
+            )}
 
         <div className="max-w-4xl mx-auto space-y-8">
           <WalletInput onSubmit={handleWalletSubmit} isLoading={isLoading} />
@@ -210,6 +179,7 @@ export default function HomePage() {
           )}
         </div>
       </main>
+
       <Footer />
     </div>
   )

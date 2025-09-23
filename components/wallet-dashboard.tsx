@@ -54,7 +54,7 @@ export function WalletDashboard({
   const blockchainName = getBlockchainName(blockchain)
 
   return (
-    <Card className="w-full bg-card/50 backdrop-blur-sm border-primary/20">
+    <Card className="w-full bg-card backdrop-blur-sm border-primary/20">
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Wallet className="h-5 w-5 text-primary" />
@@ -83,17 +83,17 @@ export function WalletDashboard({
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-primary/10 rounded-lg border border-primary/20">
+          <div className="text-center p-4  rounded-lg border border-primary/20">
             <div className="text-2xl font-bold text-primary">{totalNfts.toLocaleString()}</div>
             <div className="text-sm text-muted-foreground">Total NFTs</div>
           </div>
 
-          <div className="text-center p-4 bg-secondary/10 rounded-lg border border-secondary/20">
+          <div className="text-center p-4  rounded-lg border border-secondary/20">
             <div className="text-2xl font-bold text-secondary">{totalCollections.toLocaleString()}</div>
             <div className="text-sm text-muted-foreground">Collections</div>
           </div>
 
-          <div className="text-center p-4 bg-accent/10 rounded-lg border border-accent/20">
+          <div className="text-center p-4  rounded-lg border border-accent/20">
             <div className="flex items-center justify-center gap-1">
               <Activity className="h-4 w-4 text-accent" />
               <div className="text-2xl font-bold text-accent">{transactionCount.toLocaleString()}</div>

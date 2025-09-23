@@ -62,7 +62,8 @@ export function WalletInput({ onSubmit, isLoading }: WalletInputProps) {
           Enter Wallet Address
         </CardTitle>
         <CardDescription>
-          Select your blockchain and enter your wallet address to view your NFT collections
+          Enter your wallet address to view your NFT collections to add to the canvas<br />
+          Once you have selected what you need from the wallet you can then add a different wallet and add these to the canvas
         </CardDescription>
       </CardHeader>
       <CardContent>
