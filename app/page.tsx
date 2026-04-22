@@ -142,18 +142,18 @@ export default function HomePage() {
               <CardHeader className="text-center">
                 <CardTitle className="flex items-center justify-center gap-2">
                   <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4">
-                    <span className="text-primary">Zoloz</span> <span className="text-secondary">Crypto</span>{" "}
-                    <span className="text-accent">Canvas</span>
+                    <span className="text-primary">Cyber</span> <span className="text-secondary">Master</span>{" "}
+                    <span className="text-accent">Acadamy</span>
                   </h1>
-                  
+
                 </CardTitle>
                 <CardDescription>
-                  Craft your own NFT masterpiece. Connect your wallet, select your favorite digital assets from multiple Ethereum wallets 
+                  Craft your own NFT masterpiece. enter wallet address, select your favorite digital assets from multiple Ethereum wallets
                   and create a stunning grid to download and share.
                   <br /><br />
                   <span className="text-xl font-bold text-primary"><a href="/selected">Selected NFTs</a></span><br /><br />
                   {count > 0 && (
-                  
+
                     <div className="flex items-center justify-center gap-4">
                       <a href="/selected">
                         <Badge variant="secondary" className="text-sm px-3 py-1">
@@ -166,7 +166,7 @@ export default function HomePage() {
                         onClick={clearAll}
                         className="text-destructive hover:text-destructive bg-transparent"
                       >
-                      <Trash2 className="h-4 w-4 mr-2" />
+                        <Trash2 className="h-4 w-4 mr-2" />
                         Clear All
                       </Button>
                     </div>
@@ -177,7 +177,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        
+
 
         <div className="max-w-4xl mx-auto space-y-8">
           <WalletInput onSubmit={handleWalletSubmit} isLoading={isLoading} />
