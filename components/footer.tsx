@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Twitter } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 export function Footer() {
   return (
@@ -8,7 +9,16 @@ export function Footer() {
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold">CyberMaster Academy</h3>
+            <div className="flex items-center gap-3">
+              <Image 
+                src="/images/frog-logo-color.png" 
+                alt="CyberMaster Academy" 
+                width={48} 
+                height={48}
+                className="rounded-full"
+              />
+              <h3 className="text-lg font-semibold">CyberMaster Academy</h3>
+            </div>
             <p className="text-sm text-muted-foreground">
               Explore NFT collections and your digital assets across multiple blockchains.
             </p>

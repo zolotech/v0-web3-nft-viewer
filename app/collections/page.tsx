@@ -5,7 +5,7 @@ import { Footer } from "@/components/footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ExternalLink, Twitter, Sparkles, Rocket } from "lucide-react"
+import { ExternalLink, Twitter } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -18,7 +18,7 @@ const collections = [
     status: "Live",
     openSeaUrl: "https://opensea.io/collection/aifrogz-1",
     twitterUrl: null,
-    image: "/collections/aifrogz.jpg",
+    image: "/images/aifrogz-205.jpeg",
     featured: true,
   },
   {
@@ -29,7 +29,7 @@ const collections = [
     status: "Coming Soon",
     openSeaUrl: null,
     twitterUrl: "https://x.com/FrogzonApe",
-    image: "/collections/frogzonape.jpg",
+    image: "/images/frogz-on-ape-4490.jpeg",
     featured: false,
   },
 ]
@@ -87,15 +87,13 @@ export default function CollectionsPage() {
               key={collection.name} 
               className={`nft-card-hover overflow-hidden ${collection.featured ? 'ring-2 ring-primary' : ''}`}
             >
-              <div className="relative h-64 bg-muted">
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
-                  <div className="text-center p-6">
-                    <div className="text-6xl mb-2">
-                      {collection.featured ? <Sparkles className="h-16 w-16 mx-auto text-primary" /> : <Rocket className="h-16 w-16 mx-auto text-secondary" />}
-                    </div>
-                    <p className="text-lg font-semibold text-foreground">{collection.name}</p>
-                  </div>
-                </div>
+              <div className="relative h-64 bg-muted overflow-hidden">
+                <Image
+                  src={collection.image}
+                  alt={collection.name}
+                  fill
+                  className="object-cover"
+                />
                 {collection.featured && (
                   <Badge className="absolute top-4 left-4 bg-primary text-primary-foreground">
                     Featured Collection

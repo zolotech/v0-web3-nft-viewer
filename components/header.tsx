@@ -4,9 +4,10 @@ import { useEffect } from "react"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Wallet, Twitter, Heart, Search, Layers } from "lucide-react"
+import { Twitter, Heart, Search, Layers } from "lucide-react"
 import { useSelectedNFTs } from "@/contexts/selected-nfts-context"
 import Link from "next/link"
+import Image from "next/image"
 
 export function Header() {
   const { count } = useSelectedNFTs()
@@ -19,7 +20,13 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
-          <Wallet className="h-8 w-8 text-primary" />
+          <Image 
+            src="/images/frog-logo-color.png" 
+            alt="CyberMaster Academy" 
+            width={40} 
+            height={40}
+            className="rounded-full"
+          />
           <span className="text-xl font-bold text-primary">CyberMaster Academy</span>
         </Link>
 
