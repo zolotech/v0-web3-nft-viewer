@@ -106,7 +106,7 @@ export function WalletInput({ onSubmit, isLoading }: WalletInputProps) {
 
           
 {address && (
-  <Button variant="outline" className="w-full mt-4 border-primary/50 hover:bg-primary/10" asChild>
+  <Button variant="outline" className="w-full mt-4 border-primary/50 hover:bg-primary/10 hover:text-foreground" asChild>
     <Link href={`/transactions/${address}`} className="flex items-center justify-center gap-2">
       <Shield className="h-4 w-4" />
       Security Dashboard
