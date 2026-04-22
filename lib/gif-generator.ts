@@ -26,6 +26,7 @@ export class NFTGifGenerator {
       height: height,
       background: background,
       transparent: null,
+      workerScript: "/gif.worker.js",
     })
 
     // Create canvas for rendering frames

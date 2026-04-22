@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Wallet, Search } from "lucide-react"
+import { Wallet, Search, Shield } from "lucide-react"
 import type { Blockchain } from "@/app/page"
 import Link from 'next/link';
 
@@ -105,13 +105,14 @@ export function WalletInput({ onSubmit, isLoading }: WalletInputProps) {
           </Button>
 
           
-<div className="mt-4">
-  {address && (
-    <Link href={`/transactions/${address}`} className="text-blue-600 hover:underline">
-      View Wallet Transactions
+{address && (
+  <Button variant="outline" className="w-full mt-4 border-primary/50 hover:bg-primary/10 hover:text-foreground" asChild>
+    <Link href={`/transactions/${address}`} className="flex items-center justify-center gap-2">
+      <Shield className="h-4 w-4" />
+      Security Dashboard
     </Link>
-  )}
-</div>
+  </Button>
+)}
 
 
         </form>
