@@ -40,10 +40,10 @@ export default function SelectedPage() {
           {/* Header Section */}
           <div className="text-center space-y-4">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-cyan-400 bg-clip-text text-transparent">
-              Selected NFTs
+              Your Selected NFTs
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              View and manage your selected NFTs from across different collections and blockchains. Choose your
+              View and manage your selected NFTs from across different collections and wallets. Choose your
               preferred layout and export options.
             </p>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
