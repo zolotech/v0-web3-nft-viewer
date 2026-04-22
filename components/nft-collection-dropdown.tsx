@@ -49,7 +49,7 @@ export function NFTCollectionDropdown({
               <SelectValue placeholder="Select a collection to view NFTs" />
             </SelectTrigger>
             <SelectContent>
-              {collections.map((collection) => (
+              {[...collections].sort((a, b) => a.name.localeCompare(b.name)).map((collection) => (
                 <SelectItem key={collection.id} value={collection.id}>
                   <div className="flex items-center justify-between w-full">
                     <span>{collection.name}</span>
