@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { Shield, ShieldAlert, ShieldCheck, ArrowLeft, Activity, TrendingUp, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Shield, ShieldAlert, ShieldCheck, ArrowLeft, Activity, TrendingUp, AlertTriangle, CheckCircle2, Key, Bot, Clock, FileCheck } from 'lucide-react';
 
 interface Transfer {
   hash: string;
@@ -15,6 +15,8 @@ interface Transfer {
   from: string;
   to: string;
   value?: string;
+  asset?: string;
+  category?: string;
   metadata?: { blockTimestamp: string };
 }
 
@@ -24,9 +26,26 @@ interface SecurityMetrics {
   uniqueInteractions: number;
   largeTransactions: number;
   recentActivity: number;
+  approvalCount: number;
+  sameBlockTxCount: number;
+  newContractInteractions: number;
+  walletAgeMonths: number;
   riskFactors: string[];
   positiveFactors: string[];
 }
+
+// Known verified contract addresses (major protocols)
+const VERIFIED_CONTRACTS = new Set([
+  '0x7a250d5630b4cf539739df2c5dacb4c659f2488d', // Uniswap V2 Router
+  '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45', // Uniswap V3 Router
+  '0xdef1c0ded9bec7f1a1670819833240f027b25eff', // 0x Exchange Proxy
+  '0x1111111254eeb25477b68fb85ed929f73a960582', // 1inch V5 Router
+  '0x881d40237659c251811cec9c364ef91dc08d300c', // Metamask Swap Router
+  '0x00000000006c3852cbef3e08e8df289169ede581', // OpenSea Seaport
+  '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', // USDC
+  '0xdac17f958d2ee523a2206206994597c13d831ec7', // USDT
+  '0x6b175474e89094c44da98b954eedeac495271d0f', // DAI
+]);
 
 function calculateSecurityMetrics(transfers: Transfer[], walletAddress: string): SecurityMetrics {
   let score = 100;
@@ -51,14 +70,112 @@ function calculateSecurityMetrics(transfers: Transfer[], walletAddress: string):
     return new Date(tx.metadata.blockTimestamp).getTime() > thirtyDaysAgo;
   }).length;
 
-  // Risk analysis
+  // ========== NEW SECURITY METRICS ==========
+
+  // 1. Smart Contract Approvals Detection
+  // Check for ERC20 approve transactions (category often indicates this)
+  const approvalTransactions = transfers.filter(tx => {
+    // Check if it's an approval by looking at category or zero value contract interactions
+    const isApproval = tx.category?.toLowerCase().includes('approve') ||
+      tx.category?.toLowerCase().includes('erc20') ||
+      (tx.value === '0' && tx.to && tx.from.toLowerCase() === walletAddress.toLowerCase());
+    return isApproval;
+  });
+  const approvalCount = approvalTransactions.length;
+
+  if (approvalCount > 10) {
+    score -= 20;
+    riskFactors.push(`High number of token approvals (${approvalCount})`);
+  } else if (approvalCount > 5) {
+    score -= 10;
+    riskFactors.push(`Multiple token approvals detected (${approvalCount})`);
+  } else if (approvalCount === 0 && transfers.length > 10) {
+    score += 10;
+    positiveFactors.push('Clean slate: No token approvals detected');
+  }
+
+  // 2. Contract Interaction Safety
+  // Check for interactions with unverified/unknown contracts
+  let unverifiedInteractions = 0;
+  let verifiedInteractions = 0;
+  const interactedContracts = new Set<string>();
+
+  transfers.forEach(tx => {
+    const targetAddress = tx.to?.toLowerCase();
+    if (targetAddress && targetAddress !== walletAddress.toLowerCase()) {
+      interactedContracts.add(targetAddress);
+      if (VERIFIED_CONTRACTS.has(targetAddress)) {
+        verifiedInteractions++;
+      } else {
+        unverifiedInteractions++;
+      }
+    }
+  });
+
+  // Check for new contract interactions (contracts deployed within last 24 hours would need on-chain data)
+  // For now, we penalize high ratio of unverified contract interactions
+  const newContractInteractions = 0; // Would require additional API call to check contract age
+  
+  if (verifiedInteractions > 0) {
+    positiveFactors.push(`Interactions with ${verifiedInteractions} verified protocols`);
+    score += 5;
+  }
+  
+  if (unverifiedInteractions > verifiedInteractions * 2 && unverifiedInteractions > 5) {
+    score -= 15;
+    riskFactors.push('High ratio of unverified contract interactions');
+  }
+
+  // 3. Behavioral "Human" Patterns - Same Block Transactions
+  // Group transactions by block number to detect bot-like behavior
+  const blockCounts = new Map<string, number>();
+  transfers.forEach(tx => {
+    const block = tx.blockNum;
+    blockCounts.set(block, (blockCounts.get(block) || 0) + 1);
+  });
+
+  const sameBlockTxCount = Array.from(blockCounts.values()).filter(count => count > 1).length;
+  const multipleTxInSameBlock = Array.from(blockCounts.entries()).filter(([, count]) => count >= 3);
+
+  if (multipleTxInSameBlock.length > 3) {
+    score -= 15;
+    riskFactors.push('Bot-like behavior: Multiple transactions in same blocks');
+  } else if (sameBlockTxCount > 5) {
+    score -= 5;
+    riskFactors.push('Possible automated transactions detected');
+  }
+
+  // 4. Wallet Age Analysis
+  let walletAgeMonths = 0;
+  if (transfers.length > 0) {
+    const timestamps = transfers
+      .filter(tx => tx.metadata?.blockTimestamp)
+      .map(tx => new Date(tx.metadata!.blockTimestamp).getTime());
+    
+    if (timestamps.length > 0) {
+      const oldestTx = Math.min(...timestamps);
+      walletAgeMonths = Math.floor((Date.now() - oldestTx) / (30 * 24 * 60 * 60 * 1000));
+      
+      if (walletAgeMonths >= 12) {
+        score += 10;
+        positiveFactors.push(`Established wallet (${walletAgeMonths} months old)`);
+      } else if (walletAgeMonths < 1) {
+        score -= 10;
+        riskFactors.push('New wallet (less than 1 month old)');
+      }
+    }
+  }
+
+  // ========== EXISTING METRICS ==========
+
+  // Transaction history analysis
   if (transfers.length === 0) {
     score -= 20;
     riskFactors.push('No transaction history');
   } else if (transfers.length < 5) {
     score -= 10;
     riskFactors.push('Limited transaction history');
-  } else {
+  } else if (transfers.length > 50) {
     positiveFactors.push('Established transaction history');
   }
 
@@ -91,6 +208,10 @@ function calculateSecurityMetrics(transfers: Transfer[], walletAddress: string):
     uniqueInteractions,
     largeTransactions,
     recentActivity,
+    approvalCount,
+    sameBlockTxCount,
+    newContractInteractions,
+    walletAgeMonths,
     riskFactors,
     positiveFactors,
   };
@@ -296,14 +417,34 @@ export default function SecurityDashboardPage() {
                 <div className="text-xs text-muted-foreground">Unique Addresses</div>
               </div>
               <div className="rounded-lg border bg-card p-4 text-center">
+                <Key className={`h-5 w-5 mx-auto mb-2 ${metrics.approvalCount > 5 ? 'text-orange-500' : 'text-green-500'}`} />
+                <div className="text-2xl font-bold">{metrics.approvalCount}</div>
+                <div className="text-xs text-muted-foreground">Token Approvals</div>
+              </div>
+              <div className="rounded-lg border bg-card p-4 text-center">
+                <Clock className="h-5 w-5 mx-auto mb-2 text-blue-500" />
+                <div className="text-2xl font-bold">{metrics.walletAgeMonths}mo</div>
+                <div className="text-xs text-muted-foreground">Wallet Age</div>
+              </div>
+              <div className="rounded-lg border bg-card p-4 text-center">
                 <AlertTriangle className="h-5 w-5 mx-auto mb-2 text-accent" />
                 <div className="text-2xl font-bold">{metrics.largeTransactions}</div>
                 <div className="text-xs text-muted-foreground">Large Transfers</div>
               </div>
               <div className="rounded-lg border bg-card p-4 text-center">
-                <CheckCircle2 className="h-5 w-5 mx-auto mb-2 text-green-500" />
+                <Bot className={`h-5 w-5 mx-auto mb-2 ${metrics.sameBlockTxCount > 5 ? 'text-orange-500' : 'text-green-500'}`} />
+                <div className="text-2xl font-bold">{metrics.sameBlockTxCount}</div>
+                <div className="text-xs text-muted-foreground">Same-Block Txs</div>
+              </div>
+              <div className="rounded-lg border bg-card p-4 text-center">
+                <FileCheck className="h-5 w-5 mx-auto mb-2 text-primary" />
                 <div className="text-2xl font-bold">{metrics.recentActivity}</div>
                 <div className="text-xs text-muted-foreground">Recent (30d)</div>
+              </div>
+              <div className="rounded-lg border bg-card p-4 text-center">
+                <CheckCircle2 className={`h-5 w-5 mx-auto mb-2 ${metrics.score >= 60 ? 'text-green-500' : 'text-orange-500'}`} />
+                <div className="text-2xl font-bold">{metrics.score >= 80 ? 'Low' : metrics.score >= 60 ? 'Med' : 'High'}</div>
+                <div className="text-xs text-muted-foreground">Risk Level</div>
               </div>
             </div>
           </div>
