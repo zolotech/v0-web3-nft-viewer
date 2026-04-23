@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { Shield, ShieldAlert, ShieldCheck, ArrowLeft, Activity, TrendingUp, AlertTriangle, CheckCircle2, Key, Bot, Clock, FileCheck } from 'lucide-react';
+import { Shield, ShieldAlert, ShieldCheck, ArrowLeft, Activity, TrendingUp, AlertTriangle, CheckCircle2, Key, Bot, Clock, FileCheck, ExternalLink, XCircle } from 'lucide-react';
 
 interface Transfer {
   hash: string;
@@ -20,6 +20,14 @@ interface Transfer {
   metadata?: { blockTimestamp: string };
 }
 
+interface ApprovalTransaction {
+  hash: string;
+  spender: string;
+  asset: string;
+  timestamp: string;
+  blockNum: string;
+}
+
 interface SecurityMetrics {
   score: number;
   totalTransactions: number;
@@ -27,6 +35,7 @@ interface SecurityMetrics {
   largeTransactions: number;
   recentActivity: number;
   approvalCount: number;
+  approvals: ApprovalTransaction[];
   sameBlockTxCount: number;
   newContractInteractions: number;
   walletAgeMonths: number;
@@ -82,6 +91,15 @@ function calculateSecurityMetrics(transfers: Transfer[], walletAddress: string):
     return isApproval;
   });
   const approvalCount = approvalTransactions.length;
+  
+  // Map to ApprovalTransaction format for display
+  const approvals: ApprovalTransaction[] = approvalTransactions.map(tx => ({
+    hash: tx.hash,
+    spender: tx.to || 'Unknown',
+    asset: tx.asset || 'Unknown Token',
+    timestamp: tx.metadata?.blockTimestamp || '',
+    blockNum: tx.blockNum,
+  }));
 
   if (approvalCount > 10) {
     score -= 20;
@@ -209,6 +227,7 @@ function calculateSecurityMetrics(transfers: Transfer[], walletAddress: string):
     largeTransactions,
     recentActivity,
     approvalCount,
+    approvals,
     sameBlockTxCount,
     newContractInteractions,
     walletAgeMonths,
@@ -484,6 +503,127 @@ export default function SecurityDashboardPage() {
               </div>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Token Approvals Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-primary" />
+              Token Approvals ({metrics.approvalCount})
+            </CardTitle>
+            <Button variant="outline" size="sm" asChild>
+              <a 
+                href={`https://etherscan.io/tokenapprovalchecker?search=${address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Etherscan Approval Checker
+              </a>
+            </Button>
+          </div>
+          <CardDescription>
+            Review and revoke unnecessary token approvals to protect your assets
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {metrics.approvals.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <ShieldCheck className="h-12 w-12 mx-auto mb-3 text-green-500" />
+              <p className="font-medium">No token approvals detected</p>
+              <p className="text-sm mt-1">Your wallet has no active token approvals from transaction history</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-3 mb-4">
+                <p className="text-sm text-orange-500 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  Token approvals allow contracts to spend your tokens. Revoke any you no longer need.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Token</TableHead>
+                      <TableHead>Approved Spender</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Tx Hash</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {metrics.approvals.slice(0, 10).map((approval, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{approval.asset}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          <a
+                            href={`https://etherscan.io/address/${approval.spender}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {approval.spender.slice(0, 6)}...{approval.spender.slice(-4)}
+                          </a>
+                        </TableCell>
+                        <TableCell>
+                          {approval.timestamp
+                            ? new Date(approval.timestamp).toLocaleDateString()
+                            : 'N/A'}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          <a
+                            href={`https://etherscan.io/tx/${approval.hash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {approval.hash.slice(0, 10)}...
+                          </a>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            asChild
+                          >
+                            <a
+                              href={`https://etherscan.io/tokenapprovalchecker?search=${address}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1"
+                            >
+                              <XCircle className="h-3 w-3" />
+                              Revoke
+                            </a>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {metrics.approvals.length > 10 && (
+                <div className="text-center pt-4">
+                  <Button variant="outline" asChild>
+                    <a
+                      href={`https://etherscan.io/tokenapprovalchecker?search=${address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2"
+                    >
+                      View all {metrics.approvals.length} approvals on Etherscan
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
