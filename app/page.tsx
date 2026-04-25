@@ -7,6 +7,7 @@ import { NFTGrid } from "@/components/nft-grid"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { LoadingSpinner } from "@/components/loading-spinner"
+import { CollectionDropdownSkeleton, NFTGridSkeleton, WalletDashboardSkeleton } from "@/components/loading-skeletons"
 import { ErrorMessage } from "@/components/error-message"
 import { WalletDashboard } from "@/components/wallet-dashboard"
 import { fetchNFTsByBlockchain } from "@/lib/blockchain-apis"
@@ -15,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from "next/link"
 
 export type Blockchain = "ethereum" | "solana" | "abstract" | "apechain"
 
@@ -42,7 +44,7 @@ export interface NFT {
 }
 
 export default function HomePage() {
-  const { selectedNFTs, clearAll, count } = useSelectedNFTs()
+  const { clearAll, count } = useSelectedNFTs()
   const [walletAddress, setWalletAddress] = useState("")
   const [selectedBlockchain, setSelectedBlockchain] = useState<Blockchain>("ethereum")
   const [collections, setCollections] = useState<NFTCollection[]>([])
@@ -52,12 +54,14 @@ export default function HomePage() {
   const [totalNfts, setTotalNfts] = useState(0)
   const [transactionCount, setTransactionCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingStage, setLoadingStage] = useState<"wallet" | "collection" | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleWalletSubmit = async (address: string, blockchain: Blockchain) => {
     setWalletAddress(address)
     setSelectedBlockchain(blockchain)
     setIsLoading(true)
+    setLoadingStage("wallet")
     setError(null)
     setCollections([])
     setSelectedCollection(null)
@@ -79,6 +83,7 @@ export default function HomePage() {
       setTotalNfts(total)
       setTransactionCount(txCount)
       setIsLoading(false)
+      setLoadingStage(null)
 
       if (fetchedCollections.length === 0) {
         setError("No NFT collections found for this wallet address.")
@@ -91,12 +96,14 @@ export default function HomePage() {
           : "Failed to fetch NFT collections. Please check your wallet address and try again.",
       )
       setIsLoading(false)
+      setLoadingStage(null)
     }
   }
 
   const handleCollectionSelect = async (collection: NFTCollection) => {
     setSelectedCollection(collection)
     setIsLoading(true)
+    setLoadingStage("collection")
     setError(null)
     setNfts([])
 
@@ -104,9 +111,11 @@ export default function HomePage() {
       const collectionNfts = allNfts.filter((nft) => nft.contractAddress === collection.contractAddress)
       setNfts(collectionNfts)
       setIsLoading(false)
+      setLoadingStage(null)
     } catch (err) {
       setError("Failed to fetch NFTs from this collection.")
       setIsLoading(false)
+      setLoadingStage(null)
     }
   }
 
@@ -143,7 +152,7 @@ export default function HomePage() {
                 <CardTitle className="flex items-center justify-center gap-2">
                   <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4">
                     <span className="text-primary">Cyber</span> <span className="text-secondary">Master</span>{" "}
-                    <span className="text-accent">Acadamy</span>
+                    <span className="text-accent">Academy</span>
                   </h1>
 
                 </CardTitle>
@@ -151,15 +160,19 @@ export default function HomePage() {
                   Craft your own NFT masterpiece. enter wallet address, select your favorite digital assets from multiple Ethereum wallets
                   and create a stunning grid to download and share.
                   <br /><br />
-                  <span className="text-xl font-bold text-primary"><a href="/selected">Selected NFTs</a></span><br /><br />
+                  <span className="text-xl font-bold text-primary">
+                    <Link href="/selected">Selected NFTs</Link>
+                  </span>
+                  <br />
+                  <br />
                   {count > 0 && (
 
                     <div className="flex items-center justify-center gap-4">
-                      <a href="/selected">
+                      <Link href="/selected">
                         <Badge variant="secondary" className="text-sm px-3 py-1">
                           {count} NFT{count !== 1 ? "s" : ""} Selected
                         </Badge>
-                      </a>
+                      </Link>
                       <Button
                         variant="outline"
                         size="sm"
@@ -184,7 +197,8 @@ export default function HomePage() {
 
           {error && <ErrorMessage message={error} />}
 
-          {isLoading && <LoadingSpinner />}
+          {isLoading && loadingStage === "wallet" && <LoadingSpinner message="Scanning wallet and loading collections..." />}
+          {isLoading && loadingStage === "collection" && <LoadingSpinner message="Loading NFTs from this collection..." />}
 
           {walletAddress && collections.length > 0 && !isLoading && (
             <WalletDashboard
@@ -204,6 +218,33 @@ export default function HomePage() {
               walletAddress={walletAddress}
               blockchain={selectedBlockchain}
             />
+          )}
+
+          {isLoading && loadingStage === "wallet" && (
+            <>
+              <WalletDashboardSkeleton />
+              <CollectionDropdownSkeleton />
+            </>
+          )}
+
+          {isLoading && loadingStage === "collection" && <NFTGridSkeleton cards={8} />}
+
+          {walletAddress && collections.length > 0 && !selectedCollection && !isLoading && (
+            <Card>
+              <CardContent className="py-6 text-center">
+                <p className="text-muted-foreground">Choose a collection above to load and select NFTs.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedCollection && nfts.length === 0 && !isLoading && !error && (
+            <Card>
+              <CardContent className="py-6 text-center">
+                <p className="text-muted-foreground">
+                  No NFTs were found in <span className="font-medium">{selectedCollection.name}</span>.
+                </p>
+              </CardContent>
+            </Card>
           )}
 
           {nfts.length > 0 && selectedCollection && !isLoading && (

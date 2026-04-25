@@ -1,16 +1,28 @@
 import { type NextRequest, NextResponse } from "next/server"
 import type { NFTCollection, NFT } from "@/app/page"
+import {
+  consumeRateLimit,
+  isSupportedBlockchain,
+  isValidWalletAddress,
+  normalizeWalletAddress,
+} from "@/lib/api-security"
+import { buildCacheKey, getCached, setCached } from "@/lib/api-cache"
 
 // Server-side API configuration - secure
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY
+const FINAL_RESPONSE_TTL_MS = 60_000
+const ETH_PAGE_TTL_MS = 120_000
+const SOLANA_PAGE_TTL_MS = 60_000
 
-async function fetchEthereumNFTs(walletAddress: string): Promise<{
+type NFTsApiResult = {
   collections: NFTCollection[]
   nfts: NFT[]
   totalNfts: number
   transactionCount: number
-}> {
+}
+
+async function fetchEthereumNFTs(walletAddress: string): Promise<NFTsApiResult> {
   if (!ALCHEMY_API_KEY) {
     throw new Error("Alchemy API key not configured")
   }
@@ -18,24 +30,31 @@ async function fetchEthereumNFTs(walletAddress: string): Promise<{
   console.log("[v0] Fetching Ethereum NFTs for:", walletAddress)
 
   // First, get transaction count
-  const txCountResponse = await fetch(`https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      method: "eth_getTransactionCount",
-      params: [walletAddress, "latest"],
-      id: 1,
-    }),
-  })
-
+  const txCountCacheKey = buildCacheKey("nfts:ethereum:txcount", [walletAddress])
+  const cachedTxCount = getCached<number>(txCountCacheKey)
   let transactionCount = 0
-  if (txCountResponse.ok) {
-    const txData = await txCountResponse.json()
-    transactionCount = Number.parseInt(txData.result, 16)
-    console.log("[v0] Transaction count:", transactionCount)
+  if (cachedTxCount != null) {
+    transactionCount = cachedTxCount
+  } else {
+    const txCountResponse = await fetch(`https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "eth_getTransactionCount",
+        params: [walletAddress, "latest"],
+        id: 1,
+      }),
+    })
+
+    if (txCountResponse.ok) {
+      const txData = await txCountResponse.json()
+      transactionCount = Number.parseInt(txData.result, 16)
+      setCached(txCountCacheKey, transactionCount, ETH_PAGE_TTL_MS)
+      console.log("[v0] Transaction count:", transactionCount)
+    }
   }
 
   const allNfts: any[] = []
@@ -52,42 +71,52 @@ async function fetchEthereumNFTs(walletAddress: string): Promise<{
         await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS))
       }
 
-      const url = new URL(`https://eth-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}/getNFTsForOwner`)
-      url.searchParams.append("owner", walletAddress)
-      url.searchParams.append("withMetadata", "true")
-      url.searchParams.append("orderBy", "transferTime")
-      url.searchParams.append("excludeFilters[]", "SPAM")
-      url.searchParams.append("pageSize", "100")
+      const pageCacheKey = buildCacheKey("nfts:ethereum:page", [walletAddress, pageKey ?? "first"])
+      const cachedPage = getCached<any>(pageCacheKey)
+      let data: any
 
-      if (pageKey) {
-        url.searchParams.append("pageKey", pageKey)
-      }
+      if (cachedPage) {
+        data = cachedPage
+      } else {
+        const url = new URL(`https://eth-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}/getNFTsForOwner`)
+        url.searchParams.append("owner", walletAddress)
+        url.searchParams.append("withMetadata", "true")
+        url.searchParams.append("orderBy", "transferTime")
+        url.searchParams.append("excludeFilters[]", "SPAM")
+        url.searchParams.append("pageSize", "100")
 
-      console.log("[v0] Alchemy API URL:", url.toString())
-
-      const response = await fetch(url.toString(), {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-      })
-
-      console.log("[v0] Alchemy response status:", response.status)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.log("[v0] Alchemy error response:", errorText)
-
-        // If we get an error but already have some NFTs, break the loop instead of throwing
-        if (allNfts.length > 0) {
-          console.log("[v0] API error encountered, but returning", allNfts.length, "NFTs already fetched")
-          break
+        if (pageKey) {
+          url.searchParams.append("pageKey", pageKey)
         }
 
-        throw new Error(`Alchemy API error: ${response.status} - ${errorText}`)
+        console.log("[v0] Alchemy API URL:", url.toString())
+
+        const response = await fetch(url.toString(), {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+        })
+
+        console.log("[v0] Alchemy response status:", response.status)
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.log("[v0] Alchemy error response:", errorText)
+
+          // If we get an error but already have some NFTs, break the loop instead of throwing
+          if (allNfts.length > 0) {
+            console.log("[v0] API error encountered, but returning", allNfts.length, "NFTs already fetched")
+            break
+          }
+
+          throw new Error(`Alchemy API error: ${response.status} - ${errorText}`)
+        }
+
+        data = await response.json()
+        setCached(pageCacheKey, data, ETH_PAGE_TTL_MS)
       }
 
-      const data = await response.json()
       console.log("[v0] Alchemy batch received, NFT count:", data.ownedNfts?.length || 0)
 
       if (data.ownedNfts) {
@@ -168,47 +197,51 @@ async function fetchEthereumNFTs(walletAddress: string): Promise<{
   }
 }
 
-async function fetchSolanaNFTs(walletAddress: string): Promise<{
-  collections: NFTCollection[]
-  nfts: NFT[]
-  totalNfts: number
-  transactionCount: number
-}> {
+async function fetchSolanaNFTs(walletAddress: string): Promise<NFTsApiResult> {
   if (!HELIUS_API_KEY) {
     throw new Error("Helius API key not configured")
   }
 
   console.log("[v0] Fetching Solana NFTs for:", walletAddress)
 
-  const response = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: "my-id",
-      method: "getAssetsByOwner",
-      params: {
-        ownerAddress: walletAddress,
-        page: 1,
-        limit: 1000,
-        displayOptions: {
-          showFungible: false,
-        },
+  const solanaPageCacheKey = buildCacheKey("nfts:solana:owner", [walletAddress])
+  const cachedSolanaData = getCached<any>(solanaPageCacheKey)
+  let data: any
+  if (cachedSolanaData) {
+    data = cachedSolanaData
+  } else {
+    const response = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    }),
-  })
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "my-id",
+        method: "getAssetsByOwner",
+        params: {
+          ownerAddress: walletAddress,
+          page: 1,
+          limit: 1000,
+          displayOptions: {
+            showFungible: false,
+          },
+        },
+      }),
+    })
 
-  console.log("[v0] Helius response status:", response.status)
+    console.log("[v0] Helius response status:", response.status)
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    console.log("[v0] Helius error response:", errorText)
-    throw new Error(`Helius API error: ${response.status} - ${errorText}`)
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.log("[v0] Helius error response:", errorText)
+      throw new Error(`Helius API error: ${response.status} - ${errorText}`)
+    }
+
+    data = await response.json()
+    setCached(solanaPageCacheKey, data, SOLANA_PAGE_TTL_MS)
   }
 
-  const data = await response.json()
   console.log("[v0] Helius data received, asset count:", data.result?.items?.length || 0)
 
   if (data.error) {
@@ -268,12 +301,7 @@ async function fetchSolanaNFTs(walletAddress: string): Promise<{
   }
 }
 
-async function fetchAbstractNFTs(walletAddress: string): Promise<{
-  collections: NFTCollection[]
-  nfts: NFT[]
-  totalNfts: number
-  transactionCount: number
-}> {
+async function fetchAbstractNFTs(walletAddress: string): Promise<NFTsApiResult> {
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
   const nfts = [
@@ -308,12 +336,7 @@ async function fetchAbstractNFTs(walletAddress: string): Promise<{
   }
 }
 
-async function fetchApeChainNFTs(walletAddress: string): Promise<{
-  collections: NFTCollection[]
-  nfts: NFT[]
-  totalNfts: number
-  transactionCount: number
-}> {
+async function fetchApeChainNFTs(walletAddress: string): Promise<NFTsApiResult> {
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
   const nfts = [
@@ -350,33 +373,74 @@ async function fetchApeChainNFTs(walletAddress: string): Promise<{
 }
 
 export async function POST(request: NextRequest) {
+  const limitState = consumeRateLimit(request, "api:nfts", 20, 60_000)
+  if (!limitState.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Please wait before trying again." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(limitState.retryAfterSeconds),
+          "X-RateLimit-Limit": String(limitState.limit),
+          "X-RateLimit-Remaining": String(limitState.remaining),
+        },
+      },
+    )
+  }
+
   try {
-    const { walletAddress, blockchain } = await request.json()
+    let body: any
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
+    }
+    const walletAddress = body?.walletAddress
+    const blockchain = body?.blockchain
 
     console.log("[v0] API request received:", { walletAddress, blockchain })
 
-    if (!walletAddress || !blockchain) {
-      return NextResponse.json({ error: "Missing walletAddress or blockchain" }, { status: 400 })
+    if (typeof walletAddress !== "string" || !isSupportedBlockchain(blockchain)) {
+      return NextResponse.json({ error: "Invalid walletAddress or blockchain" }, { status: 400 })
     }
 
-    let result: { collections: NFTCollection[]; nfts: NFT[]; totalNfts: number; transactionCount: number }
+    if (!isValidWalletAddress(walletAddress, blockchain)) {
+      return NextResponse.json({ error: `Invalid ${blockchain} wallet address format` }, { status: 400 })
+    }
+
+    const normalizedWalletAddress = normalizeWalletAddress(walletAddress, blockchain)
+    const finalCacheKey = buildCacheKey("nfts:final", [blockchain, normalizedWalletAddress])
+    const cachedResult = getCached<NFTsApiResult>(finalCacheKey)
+    if (cachedResult) {
+      return NextResponse.json(cachedResult, {
+        headers: {
+          "X-RateLimit-Limit": String(limitState.limit),
+          "X-RateLimit-Remaining": String(limitState.remaining),
+          "X-Cache": "HIT",
+        },
+      })
+    }
+
+    let result: NFTsApiResult
 
     switch (blockchain) {
       case "ethereum":
-        result = await fetchEthereumNFTs(walletAddress)
+        result = await fetchEthereumNFTs(normalizedWalletAddress)
         break
       case "solana":
-        result = await fetchSolanaNFTs(walletAddress)
+        result = await fetchSolanaNFTs(normalizedWalletAddress)
         break
       case "abstract":
-        result = await fetchAbstractNFTs(walletAddress)
+        result = await fetchAbstractNFTs(normalizedWalletAddress)
         break
       case "apechain":
-        result = await fetchApeChainNFTs(walletAddress)
+        result = await fetchApeChainNFTs(normalizedWalletAddress)
         break
       default:
         return NextResponse.json({ error: `Unsupported blockchain: ${blockchain}` }, { status: 400 })
     }
+
+    setCached(finalCacheKey, result, FINAL_RESPONSE_TTL_MS)
 
     console.log(
       "[v0] API response ready, collections:",
@@ -386,7 +450,13 @@ export async function POST(request: NextRequest) {
       "Total:",
       result.totalNfts,
     )
-    return NextResponse.json(result)
+    return NextResponse.json(result, {
+      headers: {
+        "X-RateLimit-Limit": String(limitState.limit),
+        "X-RateLimit-Remaining": String(limitState.remaining),
+        "X-Cache": "MISS",
+      },
+    })
   } catch (error) {
     console.error("[v0] API Error:", error)
     return NextResponse.json(

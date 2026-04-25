@@ -1,4 +1,5 @@
 import type { NFT } from "@/app/page"
+import { getProxiedNftImageUrl } from "@/lib/nft-image-url"
 
 export interface ImageOptions {
   width?: number
@@ -129,7 +130,7 @@ export class NFTImageGenerator {
       const y = padding + row * (cellHeight + padding)
 
       try {
-        const img = await this.loadImage(nft.image || "/placeholder.svg")
+        const img = await this.loadImage(getProxiedNftImageUrl(nft.image || "/placeholder.svg"))
         this.drawNFTImage(img, x, y, cellWidth, cellHeight, nft)
       } catch (error) {
         console.error("[v0] Failed to load image for NFT:", nft.name, error)
@@ -161,7 +162,7 @@ export class NFTImageGenerator {
       const y = padding
 
       try {
-        const img = await this.loadImage(nft.image || "/placeholder.svg")
+        const img = await this.loadImage(getProxiedNftImageUrl(nft.image || "/placeholder.svg"))
         this.drawNFTImage(img, x, y, cellWidth, cellHeight, nft)
       } catch (error) {
         console.error("[v0] Failed to load image for NFT:", nft.name, error)
@@ -193,7 +194,7 @@ export class NFTImageGenerator {
       const y = padding + i * (cellHeight + padding)
 
       try {
-        const img = await this.loadImage(nft.image || "/placeholder.svg")
+        const img = await this.loadImage(getProxiedNftImageUrl(nft.image || "/placeholder.svg"))
         this.drawNFTImage(img, x, y, cellWidth, cellHeight, nft)
       } catch (error) {
         console.error("[v0] Failed to load image for NFT:", nft.name, error)
@@ -227,7 +228,7 @@ export class NFTImageGenerator {
       const nft = nfts[i]
 
       try {
-        const img = await this.loadImage(nft.image || "/placeholder.svg")
+        const img = await this.loadImage(getProxiedNftImageUrl(nft.image || "/placeholder.svg"))
 
         // Draw image
         this.drawNFTImage(img, padding, currentY, width - padding * 2, nftHeight, nft, false)
@@ -271,8 +272,14 @@ export class NFTImageGenerator {
   }
 
   private canvasToBlob(format: "png" | "jpeg", quality: number): Promise<Blob> {
-    return new Promise((resolve) => {
-      this.canvas.toBlob((blob) => resolve(blob!), format === "jpeg" ? "image/jpeg" : "image/png", quality)
+    return new Promise((resolve, reject) => {
+      this.canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Failed to render image blob"))
+          return
+        }
+        resolve(blob)
+      }, format === "jpeg" ? "image/jpeg" : "image/png", quality)
     })
   }
 }

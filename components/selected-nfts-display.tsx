@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -81,7 +82,14 @@ export function SelectedNFTsDisplay({ nfts, layout }: SelectedNFTsDisplayProps) 
               <div
                 className={`relative overflow-hidden ${layout === "full" ? "" : "rounded-t-lg"} ${getImageClasses()}`}
               >
-                <img src={nft.image || "/placeholder.svg"} alt={nft.name} className="w-full h-full object-cover" />
+                <Image
+                  src={nft.image || "/placeholder.svg"}
+                  alt={nft.name}
+                  fill
+                  unoptimized
+                  sizes={layout === "full" ? "100vw" : "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"}
+                  className="object-cover"
+                />
               </div>
 
               <div className={layout === "full" ? "md:col-span-2 space-y-4" : "p-4 space-y-3"}>

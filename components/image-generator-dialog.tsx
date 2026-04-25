@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -239,12 +240,16 @@ export function ImageGeneratorDialog({ nfts, currentLayout, trigger }: ImageGene
               </CardHeader>
               <CardContent>
                 <div className="flex justify-center">
-                  <img
-                    src={imageUrl || "/placeholder.svg"}
-                    alt="Generated NFT Image"
-                    className="max-w-full h-auto border rounded-lg"
-                    style={{ maxHeight: "400px" }}
-                  />
+                  <div className="relative overflow-hidden border rounded-lg" style={{ maxHeight: "400px" }}>
+                    <Image
+                      src={imageUrl || "/placeholder.svg"}
+                      alt="Generated NFT Image"
+                      width={options.width}
+                      height={options.height}
+                      unoptimized
+                      className="max-w-full h-auto"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>

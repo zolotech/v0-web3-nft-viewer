@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -161,12 +162,16 @@ export function GifGeneratorDialog({ nfts, trigger }: GifGeneratorDialogProps) {
               </CardHeader>
               <CardContent>
                 <div className="flex justify-center">
-                  <img
-                    src={gifUrl || "/placeholder.svg"}
-                    alt="Generated NFT GIF"
-                    className="max-w-full h-auto border rounded-lg"
-                    style={{ maxHeight: "300px" }}
-                  />
+                  <div className="relative overflow-hidden border rounded-lg" style={{ maxHeight: "300px" }}>
+                    <Image
+                      src={gifUrl || "/placeholder.svg"}
+                      alt="Generated NFT GIF"
+                      width={options.width}
+                      height={options.height}
+                      unoptimized
+                      className="max-w-full h-auto"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>

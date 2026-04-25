@@ -1,20 +1,75 @@
 // app/api/transactions/route.ts
 import { type NextRequest, NextResponse } from 'next/server';
+import {
+  consumeRateLimit,
+  isSupportedBlockchain,
+  isValidWalletAddress,
+  normalizeWalletAddress,
+} from '@/lib/api-security';
+import { buildCacheKey, getCached, setCached } from '@/lib/api-cache';
 
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
+const TRANSACTIONS_PAGE_TTL_MS = 45_000;
 
 export async function POST(request: NextRequest) {
+  const limitState = consumeRateLimit(request, 'api:transactions', 15, 60_000);
+  if (!limitState.allowed) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Please wait before trying again.' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(limitState.retryAfterSeconds),
+          'X-RateLimit-Limit': String(limitState.limit),
+          'X-RateLimit-Remaining': String(limitState.remaining),
+        },
+      },
+    );
+  }
+
   try {
-    const { walletAddress, blockchain, pageKey } = await request.json();
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+    const walletAddress = body?.walletAddress;
+    const blockchain = body?.blockchain;
+    const pageKey = body?.pageKey;
 
     console.log('[v0] Transactions API request received:', { walletAddress, blockchain, pageKey });
 
-    if (!walletAddress || !blockchain) {
-      return NextResponse.json({ error: 'Missing walletAddress or blockchain' }, { status: 400 });
+    if (typeof walletAddress !== 'string' || !isSupportedBlockchain(blockchain)) {
+      return NextResponse.json({ error: 'Invalid walletAddress or blockchain' }, { status: 400 });
     }
 
     if (blockchain !== 'ethereum') {
       return NextResponse.json({ error: `Unsupported blockchain: ${blockchain}` }, { status: 400 });
+    }
+
+    if (!isValidWalletAddress(walletAddress, blockchain)) {
+      return NextResponse.json({ error: `Invalid ${blockchain} wallet address format` }, { status: 400 });
+    }
+
+    if (pageKey != null && typeof pageKey !== 'string') {
+      return NextResponse.json({ error: 'Invalid pageKey format' }, { status: 400 });
+    }
+    if (typeof pageKey === 'string' && pageKey.length > 2048) {
+      return NextResponse.json({ error: 'pageKey too long' }, { status: 400 });
+    }
+
+    const normalizedWalletAddress = normalizeWalletAddress(walletAddress, blockchain);
+    const transactionsCacheKey = buildCacheKey('transactions:page', [normalizedWalletAddress, pageKey ?? 'first']);
+    const cachedTransactions = getCached<{ transfers: any[]; pageKey: string | null }>(transactionsCacheKey);
+    if (cachedTransactions) {
+      return NextResponse.json(cachedTransactions, {
+        headers: {
+          'X-RateLimit-Limit': String(limitState.limit),
+          'X-RateLimit-Remaining': String(limitState.remaining),
+          'X-Cache': 'HIT',
+        },
+      });
     }
 
     if (!ALCHEMY_API_KEY) {
@@ -32,7 +87,7 @@ export async function POST(request: NextRequest) {
         params: [{
           fromBlock: '0x0',
           toBlock: 'latest',
-          fromAddress: walletAddress,
+          fromAddress: normalizedWalletAddress,
           excludeZeroValue:false,
           category: ['external', 'internal', 'erc20', 'erc721', 'erc1155', 'specialnft'],
           withMetadata: true,
@@ -58,39 +113,24 @@ export async function POST(request: NextRequest) {
 
     console.log('[v0] Alchemy transactions received, count:', data.result.transfers.length);
 
-    // Process transactions to flag approvals and check allowances
+    // Process transactions to flag likely token approvals
     const processedTransfers = await Promise.all(
       data.result.transfers.map(async (transfer: any) => {
         let isApproval = false;
-        let activeAllowance = '0';
         const method = transfer.metadata?.method || 'Unknown';
-        const data = transfer.rawContract?.data || '';
+        const rawData = transfer.rawContract?.data || '';
 
         // Check for approve (0x095ea7b3) or increaseAllowance (0x39509351)
-        if (data.startsWith('0x095ea7b3') || data.startsWith('0x39509351')) {
+        if (rawData.startsWith('0x095ea7b3') || rawData.startsWith('0x39509351')) {
           isApproval = true;
-          // Extract spender (bytes 4-36)
-          const spender = `0x${data.slice(10, 74).replace(/^0+/, '')}`;
-          if (transfer.rawContract?.address) {
-            try {
-              const allowanceData = await alchemy.core.call({
-                to: transfer.rawContract.address,
-                data: `0xdd62ed3e${walletAddress.replace('0x', '').padStart(64, '0')}${spender.replace('0x', '').padStart(64, '0')}`, // allowance(owner, spender)
-              });
-              activeAllowance = BigInt(allowanceData).toString();
-            } catch (error) {
-              console.error(`[v0] Failed to fetch allowance for ${transfer.hash}:`, error);
-            }
-          }
         } else if (method.toLowerCase().includes('approve') || method.toLowerCase().includes('increaseallowance')) {
           isApproval = true; // Fallback for metadata
         }
 
         return {
           ...transfer,
-          isApproval: isApproval && activeAllowance !== '0', // Only flag active approvals
-          method: isApproval ? (data.startsWith('0x095ea7b3') ? 'approve' : 'increaseAllowance') : method,
-          activeAllowance, // For debugging/display
+          isApproval,
+          method: isApproval ? (rawData.startsWith('0x095ea7b3') ? 'approve' : 'increaseAllowance') : method,
         };
       })
     );
@@ -100,9 +140,19 @@ export async function POST(request: NextRequest) {
 
 
 
-    return NextResponse.json({
-      transfers: data.result.transfers,
+    const responsePayload = {
+      transfers: processedTransfers,
       pageKey: data.result.pageKey || null,
+    };
+
+    setCached(transactionsCacheKey, responsePayload, TRANSACTIONS_PAGE_TTL_MS);
+
+    return NextResponse.json(responsePayload, {
+      headers: {
+        'X-RateLimit-Limit': String(limitState.limit),
+        'X-RateLimit-Remaining': String(limitState.remaining),
+        'X-Cache': 'MISS',
+      },
     });
   } catch (error) {
     console.error('[v0] Transactions API Error:', error);
